@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>OS Nexus 🚀</title>
+
+<style>
+body {
+    font-family: 'Segoe UI';
+    margin: 0;
+    background: #cce7ff; /* LIGHT BLUE */
+}
+
+.dark {
+    background: #121212;
+    color: white;
+}
+
+/* LOGIN */
+#loginPage {
+    text-align: center;
+    margin-top: 100px;
+}
+
+#loginPage input {
+    padding: 10px;
+    margin: 10px;
+    border-radius: 8px;
+}
+
+#loginPage button {
+    background: #007bff;
+    color: white;
+}
+
+/* HEADER */
+h1 {
+    text-align: center;
+    padding: 15px;
+}
+
+/* GRID */
+.container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px,1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+/* CARD */
+.card {
+    background: lightcoral;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.dark .card {
+    background: #1e1e1e;
+}
+
+/* INPUT + BUTTON */
+input, button {
+    padding: 8px;
+    margin: 5px;
+    border-radius: 6px;
+}
+
+button {
+    background: #007bff;
+    color: white;
+    border: none;
+}
+
+button:hover {
+    background: #0056b3;
+}
+
+/* RESULT */
+.result {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+/* STEPS */
+.step {
+    font-size: 14px;
+    margin: 3px;
+}
+
+/* TABLE */
+table {
+    border-collapse: collapse;
+}
+
+th {
+    background: #007bff;
+    color: white;
+}
+
+td {
+    padding: 6px;
+    text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="loginPage">
+    <h2>🔐 Login</h2>
+    <input id="username" placeholder="Username"><br>
+    <input id="password" type="password" placeholder="Password"><br>
+    <button onclick="login()">Login</button>
+    <p id="loginError" style="color:red;"></p>
+</div>
+
+<!-- MAIN CONTENT -->
+<div id="mainContent" style="display:none;">
+
+<h1>🚀 OS Nexus</h1>
+<button onclick="toggleDark()">🌙 Dark Mode</button>
+
+<div class="container">
+
+<!-- PAGE REPLACEMENT -->
+<div class="card">
+<h2>Page Replacement</h2>
+<input id="pages" placeholder="1,2,3,4,1,2,5">
+<button onclick="runFIFO()">FIFO</button>
+<button onclick="runLRU()">LRU</button>
+<button onclick="runOPT()">Optimal</button>
+
+<div id="steps"></div>
+<div class="result" id="pageResult"></div>
+</div>
+
+<!-- DISK -->
+<div class="card">
+<h2>Disk Scheduling</h2>
+<input id="queue" placeholder="98,183,41">
+<input id="head" placeholder="Head">
+<button onclick="runFCFS()">FCFS</button>
+<button onclick="runSSTF()">SSTF</button>
+
+<div class="result" id="diskResult"></div>
+</div>
+
+<!-- COMPARISON -->
+<div class="card">
+<h2>📊 Comparison</h2>
+<table border="1" width="100%">
+<tr>
+<th>Algorithm</th>
+<th>Page Faults</th>
+</tr>
+
+<tr>
+<td>FIFO</td>
+<td id="fifoC"></td>
+</tr>
+
+<tr>
+<td>LRU</td>
+<td id="lruC"></td>
+</tr>
+
+<tr>
+<td>Optimal</td>
+<td id="optC"></td>
+</tr>
+
+</table>
+</div>
+
+</div>
+</div>
+
+<script>
+
+// LOGIN
+function login(){
+    let u=document.getElementById("username").value;
+    let p=document.getElementById("password").value;
+
+    if(u==="admin" && p==="os123"){
+        document.getElementById("loginPage").style.display="none";
+        document.getElementById("mainContent").style.display="block";
+    } else {
+        document.getElementById("loginError").innerText="Wrong credentials";
+    }
+}
+
+// DARK MODE
+function toggleDark(){
+    document.body.classList.toggle("dark");
+}
+
+// FIFO
+function runFIFO(){
+    let pages=getPages(),frames=[],faults=0,steps="";
+    pages.forEach(p=>{
+        if(!frames.includes(p)){
+            if(frames.length<3) frames.push(p);
+            else frames.shift(),frames.push(p);
+            faults++;
+        }
+        steps+=frames+"<br>";
+    });
+    show("FIFO",faults,steps);
+}
+
+// LRU
+function runLRU(){
+    let pages=getPages(),frames=[],faults=0,steps="";
+    pages.forEach(p=>{
+        if(frames.includes(p)){
+            frames.splice(frames.indexOf(p),1);
+            frames.push(p);
+        } else {
+            if(frames.length<3) frames.push(p);
+            else frames.shift(),frames.push(p);
+            faults++;
+        }
+        steps+=frames+"<br>";
+    });
+    show("LRU",faults,steps);
+}
+
+// OPTIMAL
+function runOPT(){
+    let pages=getPages(),frames=[],faults=0,steps="";
+    for(let i=0;i<pages.length;i++){
+        if(!frames.includes(pages[i])){
+            if(frames.length<3) frames.push(pages[i]);
+            else frames[0]=pages[i];
+            faults++;
+        }
+        steps+=frames+"<br>";
+    }
+    show("OPT",faults,steps);
+}
+
+// FCFS
+function runFCFS(){
+    let q=getQueue(),head=getHead(),total=0;
+    q.forEach(r=>{total+=Math.abs(head-r);head=r;});
+    document.getElementById("diskResult").innerHTML="FCFS Movement: "+total;
+}
+
+// SSTF
+function runSSTF(){
+    let q=getQueue(),head=getHead(),total=0;
+    while(q.length){
+        let d=q.map(x=>Math.abs(x-head));
+        let m=Math.min(...d),i=d.indexOf(m);
+        total+=m;head=q[i];q.splice(i,1);
+    }
+    document.getElementById("diskResult").innerHTML="SSTF Movement: "+total;
+}
+
+// HELPERS
+function getPages(){return document.getElementById("pages").value.split(",").map(Number);}
+function getQueue(){return document.getElementById("queue").value.split(",").map(Number);}
+function getHead(){return parseInt(document.getElementById("head").value);}
+
+// SHOW + COMPARISON
+function show(name,faults,steps){
+    let hits=getPages().length-faults;
+
+    document.getElementById("steps").innerHTML=steps;
+    document.getElementById("pageResult").innerHTML=
+        name+" → Hits:"+hits+" Faults:"+faults;
+
+    if(name==="FIFO") document.getElementById("fifoC").innerText=faults;
+    if(name==="LRU") document.getElementById("lruC").innerText=faults;
+    if(name==="OPT") document.getElementById("optC").innerText=faults;
+}
+
+</script>
+
+</body>
+</html>
